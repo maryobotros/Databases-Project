@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.lang.String;
 import java.sql.ResultSet;
+import java.time.LocalDate;
+import java.util.Date;
 import java.sql.ResultSetMetaData;
 
 public class FinalProjectQuery {
@@ -22,23 +24,22 @@ public class FinalProjectQuery {
 
 
     public static void q1(Connection conn) throws SQLException {
-        // create the query given a year and a month, provide the real name, tag, nationality and the number of
-        // wins of players who were born in that month and year
-        Scanner myObj = new Scanner(System.in);
+        // Create the query given a year and a month
+    	// Provide the real name, tag, nationality and the number of wins of players who were born in that month and year
+        Scanner scanner = new Scanner(System.in);
 
         System.out.println("Creating q1 statement...");
+        
         System.out.println("Enter a year: ");
-
-        int year = myObj.nextInt();
+        int year = scanner.nextInt();
 
         System.out.println("Enter a month (XX): ");
-
-        int month = myObj.nextInt();
+        int month = scanner.nextInt();
 
         Statement statement = conn.createStatement();
 
-        // construct the sql statement in a string
-        String createSql1 = "SELECT Player.real_name, Player.tag, Player.nationality, COUNT(*) " +
+        // Construct the sql statement in a string
+        String createSql1 = "SELECT Player.real_name, Player.tag, Player.nationality, COUNT(*) AS num_of_wins " +
                 "FROM Player, Earnings " + 
         		"WHERE Player.player_id = Earnings.player_id " +
                 "AND Earnings.position = 1 " +
@@ -72,35 +73,34 @@ public class FinalProjectQuery {
             System.out.println("");
         }
 
-        statement.close();
-        conn.close();
-
     }
 
     public static void q2(Connection conn) throws SQLException {
-        // given a player id and a team id, add that player as a member of the specified team
+        // Given a player id and a team id, add that player as a member of the specified team
         // with the START DATE set according to the current system time.
 
         // If the player is currently a member of another team, the database should be updated to reflect their departure
         // from the "old team, with the end date set
 
-        // IF the player was already a current member of the given "new" team, no changes are necessary
-
-        Scanner myObj = new Scanner(System.in);
+        // If the player was already a current member of the given "new" team, no changes are necessary
+        Scanner scanner = new Scanner(System.in);
+        LocalDate date = java.time.LocalDate.now();
 
         System.out.println("Creating q2 statement...");
+        
         System.out.println("Enter player_id: ");
-
-        int player_id = myObj.nextInt();
+        int player_id = scanner.nextInt();
 
         System.out.println("Enter team_id for player to be added to: ");
-
-        int team_id = myObj.nextInt();
+        int team_id = scanner.nextInt();
 
         Statement statement = conn.createStatement();
 
-        // construct the sql2 statement in a string
-        String createSql2 = "";
+        // Construct the sql2 statement in a string if insert properly
+        String createSql2 = "SELECT * " +
+        		"FROM MEMBERS "+
+        		"WHERE player_id = " + player_id;
+        
 
 
         ResultSet rs = statement.executeQuery(createSql2);
@@ -112,6 +112,7 @@ public class FinalProjectQuery {
 
         int numberOfColumns = rsmd.getColumnCount();
 
+        // Print out column names
         for (int i = 1; i <= numberOfColumns; i++) {
             if (i > 1) System.out.print(",  ");
             String columnName = rsmd.getColumnName(i);
@@ -119,14 +120,52 @@ public class FinalProjectQuery {
         }
         System.out.println("");
 
+        // Print out columns 
+        String columnValue = "";
+        String playerId = "";
+        String teamId = "";
+        String startDate = "";
+        String endDate = "";
         while (rs.next()) {
             for (int i = 1; i <= numberOfColumns; i++) {
                 if (i > 1) System.out.print(",  ");
-                String columnValue = rs.getString(i);
+                columnValue = rs.getString(i);
+                if(i == 1)  playerId = columnValue;
+                else if (i == 2) teamId = columnValue;
+                else if (i == 3) startDate = columnValue;
+                else if (i == 4) endDate = columnValue;
+                
                 System.out.print(columnValue);
             }
             System.out.println("");
         }
+        
+        System.out.println();
+//        System.out.println(playerId);
+//        System.out.println(teamId);
+//        System.out.println(startDate);
+//        System.out.println(endDate);
+            
+        // If the player is already on the team
+        if(playerId.equals(String.valueOf(player_id))) {
+        	System.out.println("Player " +  player_id + " is already on team " + team_id + ".");
+        }
+        
+        // If the player is not on any teams -----------------
+        else if(columnValue == "") {
+        	String insertStatement = "INSERT INTO  Members (player_id, team_id, start_date, end_date)" +
+        	"VALUES (" + player_id + ", " + team_id + ", 2020/10/10, null)";
+        	statement.executeUpdate(insertStatement);
+        	System.out.println("The new player has been added onto the new team");
+        }
+        
+      
+      // If the player is on another team -----------------
+      // Update the record on the other team
+      // Update the record on the current team
+//        else if() {
+//        	
+//        }
 
         statement.close();
         conn.close();
@@ -144,7 +183,8 @@ public class FinalProjectQuery {
             System.out.println("Connecting to database ...");
             conn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
 
-            q1(conn);
+            // q1(conn);
+            q2(conn);
 
         }catch(SQLException ex) {
             ex.printStackTrace();
